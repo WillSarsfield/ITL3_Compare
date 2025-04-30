@@ -1,0 +1,203 @@
+import streamlit as st
+import pandas as pd
+import time
+import numpy as np
+import visualisations
+import asyncio
+
+async def animate_gauge_async(chart_placeholder, fig, region, frames, bounds):
+    value = fig.data[0].value
+    steps = np.linspace(bounds[0], value, num=frames)
+    for i, v in enumerate(steps):
+        if np.isnan(value):
+            await asyncio.sleep(0.01 + 0.08 * (i / len(steps))**4)
+            continue
+        fig.data[0].value = v
+        if v * 1.15 > bounds[1]:
+            fig.data[0].gauge.axis.range = [bounds[0], v * 1.15]
+        chart_placeholder.plotly_chart(fig, use_container_width=True, key=f'gauge-{region}-{v}')
+        await asyncio.sleep(0.01 + 0.08 * (i / len(steps))**4)
+    fig.data[0].value = round(value, 3)
+    chart_placeholder.plotly_chart(fig, use_container_width=True, key=f'gauge-{region}-final')
+
+async def animate_time_series_async(chart_placeholder, fig, data, selected_indicator, regions, frames):
+    traces = []
+    data = data.dropna()
+    for region in regions:
+        temp = data.loc[data['name'] == region, :].sort_values(by='year')
+        years = temp['year'].tolist()
+        values = temp[selected_indicator].tolist()
+        traces.append({'region': region, 'years': years, 'values': values, 'animated_years': [], 'animated_values': []})
+    
+    max_steps = max(len(trace['years']) - 1 for trace in traces)
+    for i in range(len(traces[0]['years']) - 1):
+        # Interpolate for all traces in parallel
+        interp_steps = []
+        for trace in traces:
+            if i >= len(trace['years']) - 1:
+                interp_steps.append(([], []))  # Add empty interpolation for this trace
+                continue
+            
+            if np.isnan(trace['years'][i]) or np.isnan(trace['years'][i + 1]) or \
+               np.isnan(trace['values'][i]) or np.isnan(trace['values'][i + 1]):
+                continue
+            interp_years = np.linspace(trace['years'][i], trace['years'][i + 1], int(frames / len(traces[0]['years'])))
+            interp_values = np.linspace(trace['values'][i], trace['values'][i + 1], int(frames / len(traces[0]['years'])))
+            interp_steps.append((interp_years, interp_values))
+
+        for j in range(len(interp_steps[0][0])):
+            for idx, trace in enumerate(traces):
+                if len(interp_steps[idx][0]) > 0:  # Only update if interpolation exists
+                    trace['animated_years'] = trace['years'][:i + 1] + [interp_steps[idx][0][j]]
+                    trace['animated_values'] = trace['values'][:i + 1] + [interp_steps[idx][1][j]]
+                    fig.data[idx].x = trace['animated_years']
+                    fig.data[idx].y = trace['animated_values']
+            chart_placeholder.plotly_chart(fig, use_container_width=True, key=f'time_series-{i}-{j}')
+            await asyncio.sleep(0.02 + 0.1 * (j / len(interp_steps[0][0]))**4)
+
+
+    for trace in traces:
+        trace['animated_years'].append(trace['years'][-1])
+        trace['animated_values'].append(trace['values'][-1])
+    for idx, trace in enumerate(traces):
+        fig.data[idx].x = trace['animated_years']
+        fig.data[idx].y = trace['animated_values']
+    chart_placeholder.plotly_chart(fig, use_container_width=True, key=f'time_series-final')
+
+async def animate_spider_async(chart_placeholder, fig, region, frames):
+    # Extract the initial radial values (r) from the figure
+    initial_r = np.full(len(fig.data[0].r), 20)  # Start with 59 for all indicators
+    final_r = np.array(fig.data[0].r)  # Final values from the spider plot
+
+    # Interpolate the radial values for each frame
+    steps = np.linspace(0, 1, frames)  # Create interpolation steps
+    for step in steps:
+        # Interpolate between initial and final values
+        current_r = initial_r + step * (final_r - initial_r)
+        
+        # Update the figure with the interpolated values
+        fig.data[0].r = current_r
+        chart_placeholder.plotly_chart(fig, use_container_width=True, key=f'spider-{region}-{step}')
+        
+        # Add a small delay for animation
+        await asyncio.sleep(0.03 + 0.3 * (step / len(steps))**4)
+
+    # Finalize the animation with the full radial values
+    fig.data[0].r = final_r
+    chart_placeholder.plotly_chart(fig, use_container_width=True, key=f'spider-{region}-final')
+
+@st.cache_data(show_spinner=False)
+def load_data():
+    return pd.read_csv('src/data_portal_download.csv').drop(columns='code')
+
+async def main():
+    st.set_page_config(layout="wide", page_title="ITL3 Compare")
+
+    st.logo("static/logo.png", link="https://lab.productivity.ac.uk/", icon_image=None)
+
+    # Initialise data
+    all_data = load_data()
+
+    driver = {
+        'GVA per hour worked': ['Productivity measured as Gross Value Added per hour worked', '2022', '2004', '<a href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/labourproductivity/datasets/subregionalproductivitylabourproductivitygvaperhourworkedandgvaperfilledjobindicesbyuknuts2andnuts3subregions" target="_blank">Source</a>'],
+        'Export Intensity': ['Exports as a percentage of GDP ', '2022', '2016', '<a href="https://www.ons.gov.uk/businessindustryandtrade/internationaltrade/datasets/subnationaltradeingoods" target="_blank">Source</a>'],
+        'New Businesses': ['New firms as a percentage of total active firms', '2022', '2017', '<a href="https://www.ons.gov.uk/businessindustryandtrade/business/activitysizeandlocation/datasets/businessdemographyreferencetable" target="_blank">Source</a>'],
+        'Low Skilled': ["Percentage of the working-age population with NVQ1/RQF1 or ‘no qualifications’", '2022', '2016', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'High Skilled': ["Percentage of the working-age population with qualification at NVQ4+/RQF4+ level", '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Active': ['Percentage of the working-age population active in employment', '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Inactive due to Illness': ['Percentage of <i>inactive</i> working age population, inactive due to ill health', '2022', '2014', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Working Age': ['Percentage of the total population that are of working age (aged 16-64)', '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        '4G connectivity': ['Percentage of indoor premises with 4G services from all mobile network operators', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        'Fibre connectivity': ['Percentage of premises that have access to a full optic-fiber connection', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+    }
+    # Filter indicator
+    indicators = driver.keys()
+    option_columns = st.columns([1,1,1])
+
+    with option_columns[0]:
+        selected_indicator = st.selectbox("Select indicator", options=indicators)
+    data = all_data[['name', 'year', selected_indicator]]
+    # if years.max() - years.min() != 0:
+    #     selected_years = st.sidebar.slider("Select Year:", years.min(),  years.max(), 
+    #                                     value=years.max())
+    # else:
+    #     selected_years = years.max()
+    #selected_years = list(range(selected_years[0], selected_years[1] + 1))
+    # data = data.loc[data['year'] == selected_years]
+
+    # Filter region
+    itl3 = list(data['name'].unique())
+    with option_columns[1]:
+        selected_itl3_1 = st.selectbox("Select First ITL3 Region:", itl3)
+    itl3.remove(selected_itl3_1)
+    with option_columns[2]:
+        selected_itl3_2 = st.selectbox("Select Second ITL3 Region:", itl3)
+
+        
+    cols = st.columns([1,2,1])
+    tasks = []
+    # Create placeholders for the charts
+    gauge_1_placeholder = cols[0].empty()
+    time_series_placeholder = cols[1].empty()
+    gauge_2_placeholder = cols[2].empty()
+    spider_1_placeholder = cols[0].empty()
+    spider_2_placeholder = cols[2].empty()
+    # Calculate bounds as 2 standard deviations from the median (general bounds formula)
+    median = data.loc[data['year'] == int(driver[selected_indicator][1]), selected_indicator].median()
+    bounds = [median * 0.75, median * 1.25]
+    # Ensure indicators are not below 0 and encompass each class
+    bounds[0] = min(median * 0.85, max(0, bounds[0]))
+    bounds[1] = max(median * 1.15, bounds[1])
+    
+    # Create a charts
+    gauge_1 = visualisations.gauge(data, selected_itl3_1, selected_indicator, driver[selected_indicator][1], bounds)
+    time_series = visualisations.time_series(data, [selected_itl3_1, selected_itl3_2], selected_indicator)
+    gauge_2 = visualisations.gauge(data, selected_itl3_2, selected_indicator, driver[selected_indicator][1], bounds)
+    spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, 2022, '#eb5e5e')
+    spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, 2022, '#9c4f8b')
+    
+    # Animate charts
+    tasks.append(animate_gauge_async(gauge_1_placeholder, gauge_1, selected_itl3_1, 80, bounds))
+    tasks.append(animate_time_series_async(time_series_placeholder, time_series, data, selected_indicator, [selected_itl3_1, selected_itl3_2], 80))
+    tasks.append(animate_gauge_async(gauge_2_placeholder, gauge_2, selected_itl3_2, 80, bounds))
+    tasks.append(animate_spider_async(spider_1_placeholder, spider_1, selected_itl3_1, 80))
+    tasks.append(animate_spider_async(spider_2_placeholder, spider_2, selected_itl3_2, 80))
+    
+    carousel_items = ""
+    # Convert Plotly bar charts to HTML
+    for i, indicator in enumerate(indicators):
+        bar = visualisations.bar(all_data, indicator, [selected_itl3_1, selected_itl3_2])
+        bar = bar.to_html(full_html=False, include_plotlyjs='cdn')
+        # Set the first item as active
+        active_class = "active" if i == 0 else ""
+        carousel_items += f"""
+        <div class="carousel-item {active_class}">
+            {bar}
+        </div>
+        """
+        
+    # HTML for the carousel
+    carousel_html = f"""
+    <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+        {carousel_items}
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+    </div>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    """
+    await asyncio.gather(*tasks)
+    with cols[1]:
+        # Display the carousel in Streamlit
+        st.components.v1.html(carousel_html, height=500)
+
+if __name__ == '__main__':
+    asyncio.run(main())

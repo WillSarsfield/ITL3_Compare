@@ -1,0 +1,12 @@
+services:
+  tpi-itl3-compare:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args: 
+        - GOOGLE_ANALYTICS_ID=${GOOGLE_ANALYTICS_ID:-}
+    volumes:
+      - .:/app
+    ports:
+      - "${STREAMLIT_PORT-8888}:80"
+    container_name: tpi-itl3-compare
