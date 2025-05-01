@@ -1,4 +1,5 @@
 import plotly.graph_objects as go
+import textwrap
 
 '''Data should only be filtered by indicator and ITL1 regions'''
 
@@ -7,12 +8,15 @@ def gauge(data, region, indicator, selected_year, bounds):
     median = data[indicator].median()
     temp = data.loc[(data['name'] == region), :]
     value = temp[indicator].values[0]
+    if value * 1.15 > bounds[1]:
+        bounds[1] = value * 1.15
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
-        title={'text': f"{region} {indicator}, {selected_year}",
-            'font': {'size': 12}},
-        number={'font': {'size': 30}},  # Adjust the number text size
+        title={'text': '<br>'.join(textwrap.wrap(f"{region} {indicator}, {selected_year}", width=50)),
+            'font': {'size': 16}},
+        number={'font': {'size': 36},
+                'prefix': "£"},  # Adjust the number text size
         gauge={
             'axis': {'range': [bounds[0], bounds[1]]},  # Adjust range as needed
             'bar': {'color': "rgba(10, 10, 10, 0.6)"},  # Set bar color with 50% transparency
@@ -25,46 +29,54 @@ def gauge(data, region, indicator, selected_year, bounds):
     ))
     fig.update_layout(
         width=400,  # Set the desired width in pixels
-        height=250  # Set the desired height in pixels
+        height=275  # Set the desired height in pixels
     )
     return fig
 
 def time_series(data, regions, indicator):
     data = data.dropna()
     temp = data.loc[(data['name'] == regions[0]), :]
-    
+
     # Create a time series plot
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=temp['year'],  # X-axis: Year
-        y=temp[indicator],  # Y-axis: Value
+        y=temp[indicator],  # Y-axis: Indicator values
         mode='lines+markers',  # Line and markers
         name=f"{regions[0]}",
         line=dict(color="#eb5e5e", width=2),  # Customize line color and width
         marker=dict(size=6)  # Customize marker size
     ))
     temp = data.loc[(data['name'] == regions[1]), :]
-    
     fig.add_trace(go.Scatter(
         x=temp['year'],  # X-axis: Year
-        y=temp[indicator],  # Y-axis: Value
+        y=temp[indicator],  # Y-axis: Indicator values
         mode='lines+markers',  # Line and markers
         name=f"{regions[1]}",
         line=dict(color="#9c4f8b", width=2),  # Customize line color and width
         marker=dict(size=6)  # Customize marker size
     ))
-    
+
     # Update layout for better visualization
     fig.update_layout(
         title={
-            'text': f"Time Series for {regions[0]} against {regions[1]} - {indicator}",
+            'text': '<span style="font-weight:normal;">' + 
+            '<br>'.join(textwrap.wrap(f"Time Series for {regions[0]} against {regions[1]} - <b>{indicator}</b>", width=100)) +
+            '</span>',
             'font': {'size': 14},
         },
         xaxis_title="Year",
-        yaxis_title="Value",
+        yaxis_title=indicator,
         width=800,  # Set the desired width
-        height=320,  # Set the desired height
-        template="plotly_white"  # Use a clean white background
+        height=400,  # Set the desired height
+        template="plotly_white",  # Use a clean white background
+        legend=dict(
+            orientation="h",  # Horizontal legend
+            y=-0.3,  # Position below the chart
+            x=0.5,  # Center the legend horizontally
+            xanchor="center",  # Anchor the legend at the center
+            font=dict(size=16)
+        )
     )
     
     return fig
@@ -113,11 +125,13 @@ def spider(data, indicators, region, selected_year, colour):
             )
         ),
         title={
-            'text': f"Spider Plot for {region} - {selected_year}",
+            'text': '<span style="font-weight:normal;">' + 
+            '<br>'.join(textwrap.wrap(f"Spider Plot of <b>Productivity Indicators</b> {region} - {selected_year}",width=70)) +
+            '</span>',
             'font': {'size': 14},
         },
         width=400,  # Set the desired width in pixels
-        height=300,  # Set the desired height in pixels
+        height=400,  # Set the desired height in pixels
         template="plotly_white"  # Use a clean white background
     )
     
@@ -125,6 +139,11 @@ def spider(data, indicators, region, selected_year, colour):
 
 def bar(data, indicator, regions):
     temp = data.loc[(data['name'] == regions[0]), ['year', indicator]].dropna()
+    if indicator != 'GVA per hour worked':
+        temp[indicator] = temp[indicator] * 100  # Multiply indicator values by 100
+        unit = '%'
+    else:
+        unit = '£'
     # Create a bar chart
     fig = go.Figure()
     fig.add_trace(go.Bar(
@@ -134,6 +153,8 @@ def bar(data, indicator, regions):
         marker=dict(color="#eb5e5e")  # Customize bar color
     ))
     temp = data.loc[(data['name'] == regions[1]), ['year', indicator]].dropna()
+    if indicator != 'GVA per hour worked':
+        temp[indicator] = temp[indicator] * 100  # Multiply indicator values by 100
     fig.add_trace(go.Bar(
         x=temp['year'],  # X-axis: Year
         y=temp[indicator],  # Y-axis: Indicator values
@@ -144,14 +165,15 @@ def bar(data, indicator, regions):
     # Update layout for better visualization
     fig.update_layout(
         title={
-            'text': f"Bar Chart for {regions[0]} against {regions[1]} - {indicator}",
+            'text': '<br>'.join(textwrap.wrap(f"Bar Chart for {regions[0]} against {regions[1]} - <b>{indicator}</b>", width=100)),
             'font': {'size': 14},
         },
         xaxis_title="Year",
-        yaxis_title=indicator,
-        width=800,  # Set the desired width
+        yaxis_title=f"{indicator} ({unit})",
+        width=750,  # Set the desired width
         height=350,  # Set the desired height
-        template="plotly_white"  # Use a clean white background
+        template="plotly_white",  # Use a clean white background
+        showlegend=False
     )
     
     return fig

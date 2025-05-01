@@ -88,7 +88,7 @@ async def animate_spider_async(chart_placeholder, fig, region, frames):
 
 @st.cache_data(show_spinner=False)
 def load_data():
-    return pd.read_csv('src/data_portal_download.csv').drop(columns='code')
+    return pd.read_csv('src/data_portal_download.csv')
 
 async def main():
     st.set_page_config(layout="wide", page_title="ITL3 Compare")
@@ -112,10 +112,9 @@ async def main():
     }
     # Filter indicator
     indicators = driver.keys()
-    option_columns = st.columns([1,1,1])
+    cols = st.columns([1,2,1])
 
-    with option_columns[0]:
-        selected_indicator = st.selectbox("Select indicator", options=indicators)
+    selected_indicator = 'GVA per hour worked'
     data = all_data[['name', 'year', selected_indicator]]
     # if years.max() - years.min() != 0:
     #     selected_years = st.sidebar.slider("Select Year:", years.min(),  years.max(), 
@@ -124,18 +123,29 @@ async def main():
     #     selected_years = years.max()
     #selected_years = list(range(selected_years[0], selected_years[1] + 1))
     # data = data.loc[data['year'] == selected_years]
-
+    
     # Filter region
-    itl3 = list(data['name'].unique())
-    with option_columns[1]:
-        selected_itl3_1 = st.selectbox("Select First ITL3 Region:", itl3)
+    code = list(all_data['code'].unique())
+    itl3 = list(all_data['name'].unique())
+    query_params = {k.lower(): v.upper() for k, v in st.query_params.items()}
+    index_1 = 0
+    if 'region_1' in query_params:
+        if query_params['region_1'] in code:
+            index_1 = code.index(query_params['region_1'])
+    with cols[0]:
+        selected_itl3_1 = st.selectbox("Select First ITL3 Region:", itl3, index=index_1)
+    code.remove(code[itl3.index(selected_itl3_1)])
     itl3.remove(selected_itl3_1)
-    with option_columns[2]:
-        selected_itl3_2 = st.selectbox("Select Second ITL3 Region:", itl3)
+    index_2 = 0
+    if 'region_2' in query_params:
+            if query_params['region_2'] in code:
+                index_2 = code.index(query_params['region_2'])
+    with cols[2]:
+        selected_itl3_2 = st.selectbox("Select Second ITL3 Region:", itl3, index=index_2)
 
+    all_data = all_data.drop(columns='code')
         
-    cols = st.columns([1,2,1])
-    tasks = []
+    #tasks = []
     # Create placeholders for the charts
     gauge_1_placeholder = cols[0].empty()
     time_series_placeholder = cols[1].empty()
@@ -148,6 +158,7 @@ async def main():
     # Ensure indicators are not below 0 and encompass each class
     bounds[0] = min(median * 0.85, max(0, bounds[0]))
     bounds[1] = max(median * 1.15, bounds[1])
+
     
     # Create a charts
     gauge_1 = visualisations.gauge(data, selected_itl3_1, selected_indicator, driver[selected_indicator][1], bounds)
@@ -157,15 +168,20 @@ async def main():
     spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, 2022, '#9c4f8b')
     
     # Animate charts
-    tasks.append(animate_gauge_async(gauge_1_placeholder, gauge_1, selected_itl3_1, 80, bounds))
-    tasks.append(animate_time_series_async(time_series_placeholder, time_series, data, selected_indicator, [selected_itl3_1, selected_itl3_2], 80))
-    tasks.append(animate_gauge_async(gauge_2_placeholder, gauge_2, selected_itl3_2, 80, bounds))
-    tasks.append(animate_spider_async(spider_1_placeholder, spider_1, selected_itl3_1, 80))
-    tasks.append(animate_spider_async(spider_2_placeholder, spider_2, selected_itl3_2, 80))
-    
+    # tasks.append(animate_gauge_async(gauge_1_placeholder, gauge_1, selected_itl3_1, 80, bounds))
+    # tasks.append(animate_time_series_async(time_series_placeholder, time_series, data, selected_indicator, [selected_itl3_1, selected_itl3_2], 80))
+    # tasks.append(animate_gauge_async(gauge_2_placeholder, gauge_2, selected_itl3_2, 80, bounds))
+    # tasks.append(animate_spider_async(spider_1_placeholder, spider_1, selected_itl3_1, 80))
+    # tasks.append(animate_spider_async(spider_2_placeholder, spider_2, selected_itl3_2, 80))
+    gauge_1_placeholder.plotly_chart(gauge_1, use_container_width=True, key=f'gauge-{selected_itl3_1}-final')
+    gauge_2_placeholder.plotly_chart(gauge_2, use_container_width=True, key=f'gauge-{selected_itl3_2}-final')
+    time_series_placeholder.plotly_chart(time_series, use_container_width=True, key=f'time-series-final')
+    spider_1_placeholder.plotly_chart(spider_1, use_container_width=True, key=f'spider-{selected_itl3_1}-final')
+    spider_2_placeholder.plotly_chart(spider_2, use_container_width=True, key=f'spider-{selected_itl3_2}-final')
+
     carousel_items = ""
     # Convert Plotly bar charts to HTML
-    for i, indicator in enumerate(indicators):
+    for i, indicator in enumerate(list(indicators)[1:]):
         bar = visualisations.bar(all_data, indicator, [selected_itl3_1, selected_itl3_2])
         bar = bar.to_html(full_html=False, include_plotlyjs='cdn')
         # Set the first item as active
@@ -194,10 +210,13 @@ async def main():
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     """
-    await asyncio.gather(*tasks)
     with cols[1]:
         # Display the carousel in Streamlit
         st.components.v1.html(carousel_html, height=500)
+
+    
+    # await asyncio.gather(*tasks)
+    
 
 if __name__ == '__main__':
     asyncio.run(main())
