@@ -66,7 +66,7 @@ def time_series(data, regions, indicator):
             'font': {'size': 14},
         },
         xaxis_title="Year",
-        yaxis_title=indicator,
+        yaxis_title=f"{indicator} (£)",
         width=800,  # Set the desired width
         height=400,  # Set the desired height
         template="plotly_white",  # Use a clean white background
@@ -111,7 +111,19 @@ def spider(data, indicators, region, selected_year, colour):
         theta=theta_values,  # Categories (indicators)
         fill='toself',  # Fill the area under the curve
         name=f"{region} ({selected_year})",
-        line=dict(color=colour, width=2)  # Customize line color and width
+        line=dict(color=colour, width=2),  # Customize line color and width
+        hoverinfo="text",  # Enable custom hover text
+        hovertemplate="<b>Indicator:</b> %{theta}<br><b>Relative to UK Median:</b> %{r:.2f}%<extra></extra>"  # Custom hover text
+    ))
+    fig.add_trace(go.Scatterpolar(
+        r=[100]*len(r_values),  # Values for the radar plot
+        theta=theta_values,  # Categories (indicators)
+        fill='toself',  # Fill the area under the curve
+        name=f"UK median",
+        mode="lines",  # Only draw lines, no markers
+        line=dict(color="rgba(128, 128, 128, 0.5)", width=1),  # Grey line with transparency
+        fillcolor="rgba(128, 128, 128, 0.3)",  # Transparent grey fill
+        hoverinfo="skip"
     ))
 
     # Update layout for better visualization
@@ -132,12 +144,13 @@ def spider(data, indicators, region, selected_year, colour):
         },
         width=400,  # Set the desired width in pixels
         height=400,  # Set the desired height in pixels
-        template="plotly_white"  # Use a clean white background
+        template="plotly_white",  # Use a clean white background
+        showlegend=False
     )
     
     return fig
 
-def bar(data, indicator, regions):
+def bar(data, indicator, regions, driver):
     temp = data.loc[(data['name'] == regions[0]), ['year', indicator]].dropna()
     if indicator != 'GVA per hour worked':
         temp[indicator] = temp[indicator] * 100  # Multiply indicator values by 100
@@ -165,7 +178,7 @@ def bar(data, indicator, regions):
     # Update layout for better visualization
     fig.update_layout(
         title={
-            'text': '<br>'.join(textwrap.wrap(f"Bar Chart for {regions[0]} against {regions[1]} - <b>{indicator}</b>", width=100)),
+            'text': '<br>'.join(textwrap.wrap(f"Bar Chart for {regions[0]} against {regions[1]} - <b>{driver}</b>", width=80)),
             'font': {'size': 14},
         },
         xaxis_title="Year",
