@@ -88,7 +88,7 @@ async def animate_spider_async(chart_placeholder, fig, region, frames):
 
 @st.cache_data(show_spinner=False)
 def load_data():
-    return pd.read_csv('src/data_portal_download.csv')
+    return pd.read_csv('src/data_portal_download.csv'), pd.read_csv('src/UK.csv')
 
 async def main():
     st.set_page_config(layout="wide", page_title="ITL3 Compare")
@@ -96,7 +96,7 @@ async def main():
     st.logo("static/logo.png", link="https://lab.productivity.ac.uk/", icon_image=None)
 
     # Initialise data
-    all_data = load_data()
+    all_data, uk_data = load_data()
 
     driver = {
         'GVA per hour worked': ['Productivity measured as Gross Value Added per hour worked', '2022', '2004', '<a href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/labourproductivity/datasets/subregionalproductivitylabourproductivitygvaperhourworkedandgvaperfilledjobindicesbyuknuts2andnuts3subregions" target="_blank">Source</a>'],
@@ -162,7 +162,7 @@ async def main():
     
     # Create a charts
     gauge_1 = visualisations.gauge(data, selected_itl3_1, selected_indicator, driver[selected_indicator][1], bounds)
-    time_series = visualisations.time_series(data, [selected_itl3_1, selected_itl3_2], selected_indicator)
+    time_series = visualisations.time_series(all_data, [selected_itl3_1, selected_itl3_2], uk_data)
     gauge_2 = visualisations.gauge(data, selected_itl3_2, selected_indicator, driver[selected_indicator][1], bounds)
     spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, 2022, '#eb5e5e')
     spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, 2022, '#9c4f8b')

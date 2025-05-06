@@ -33,15 +33,25 @@ def gauge(data, region, indicator, selected_year, bounds):
     )
     return fig
 
-def time_series(data, regions, indicator):
-    data = data.dropna()
+def time_series(data, regions, uk_data):
+    uk_data = uk_data[['name', 'year', 'GVA/H volume']].dropna()
+    data = data[['name', 'year', 'GVA/H volume']].dropna()
+    
     temp = data.loc[(data['name'] == regions[0]), :]
 
     # Create a time series plot
     fig = go.Figure()
     fig.add_trace(go.Scatter(
+        x=uk_data['year'],  # X-axis: Year
+        y=uk_data['GVA/H volume'],  # Y-axis: Indicator values
+        mode='lines',  # Line and markers
+        name=f"United Kingdom",
+        line=dict(color="rgba(85, 85, 85, 0.3)", width=2),  # Customize line color and width
+        marker=dict(size=6),  # Customize marker size
+    ))
+    fig.add_trace(go.Scatter(
         x=temp['year'],  # X-axis: Year
-        y=temp[indicator],  # Y-axis: Indicator values
+        y=temp['GVA/H volume'],  # Y-axis: Indicator values
         mode='lines+markers',  # Line and markers
         name=f"{regions[0]}",
         line=dict(color="#eb5e5e", width=2),  # Customize line color and width
@@ -50,7 +60,7 @@ def time_series(data, regions, indicator):
     temp = data.loc[(data['name'] == regions[1]), :]
     fig.add_trace(go.Scatter(
         x=temp['year'],  # X-axis: Year
-        y=temp[indicator],  # Y-axis: Indicator values
+        y=temp['GVA/H volume'],  # Y-axis: Indicator values
         mode='lines+markers',  # Line and markers
         name=f"{regions[1]}",
         line=dict(color="#9c4f8b", width=2),  # Customize line color and width
@@ -61,12 +71,12 @@ def time_series(data, regions, indicator):
     fig.update_layout(
         title={
             'text': '<span style="font-weight:normal;">' + 
-            '<br>'.join(textwrap.wrap(f"Time Series for {regions[0]} against {regions[1]} - <b>{indicator}</b>", width=100)) +
+            '<br>'.join(textwrap.wrap(f"Time Series for {regions[0]} against {regions[1]} - <b>GVA per hour (chained 2019)</b>", width=100)) +
             '</span>',
             'font': {'size': 14},
         },
         xaxis_title="Year",
-        yaxis_title=f"{indicator} (£)",
+        yaxis_title=f"GVA per hour (chained 2019) (%)",
         width=800,  # Set the desired width
         height=400,  # Set the desired height
         template="plotly_white",  # Use a clean white background
