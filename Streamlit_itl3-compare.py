@@ -88,7 +88,7 @@ async def animate_spider_async(chart_placeholder, fig, region, frames):
 
 @st.cache_data(show_spinner=False)
 def load_data():
-    return pd.read_csv('src/data_portal_download.csv'), pd.read_csv('src/UK.csv')
+    return pd.read_csv('src/itl3_compare_data.csv'), pd.read_csv('src/itl3_compare_uk_data.csv')
 
 async def main():
     st.set_page_config(layout="wide", page_title="ITL3 Compare")
@@ -107,8 +107,8 @@ async def main():
         'Active': ['Percentage of the working-age population active in employment', '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
         'Inactive due to Illness': ['Percentage of <i>inactive</i> working age population, inactive due to ill health', '2022', '2014', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
         'Working Age': ['Percentage of the total population that are of working age (aged 16-64)', '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        '4G connectivity': ['Percentage of indoor premises with 4G services from all mobile network operators', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
-        'Fibre connectivity': ['Percentage of premises that have access to a full optic-fiber connection', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        '5G connectivity': ['Percentage of outdoor areas with 5G service access from at least one mobile network operator', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        'Gigabit connectivity': ['Percentage of premises that have access to a gigabit connection', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
     }
     # Filter indicator
     indicators = driver.keys()
@@ -125,6 +125,7 @@ async def main():
     # data = data.loc[data['year'] == selected_years]
     
     # Filter region
+    all_data = all_data.sort_values(by=['name', 'year'])
     code = list(all_data['code'].unique())
     itl3 = list(all_data['name'].unique())
     query_params = {k.lower(): v.upper() for k, v in st.query_params.items()}
