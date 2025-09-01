@@ -99,16 +99,16 @@ async def main():
     all_data, uk_data = load_data()
 
     driver = {
-        'GVA per hour worked': ['Productivity measured as Gross Value Added per hour worked', '2022', '2004', '<a href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/labourproductivity/datasets/subregionalproductivitylabourproductivitygvaperhourworkedandgvaperfilledjobindicesbyuknuts2andnuts3subregions" target="_blank">Source</a>'],
-        'Export Intensity': ['Exports as a percentage of GDP ', '2022', '2016', '<a href="https://www.ons.gov.uk/businessindustryandtrade/internationaltrade/datasets/subnationaltradeingoods" target="_blank">Source</a>'],
-        'New Businesses': ['New firms as a percentage of total active firms', '2022', '2017', '<a href="https://www.ons.gov.uk/businessindustryandtrade/business/activitysizeandlocation/datasets/businessdemographyreferencetable" target="_blank">Source</a>'],
-        'Low Skilled': ["Percentage of the working-age population with NVQ1/RQF1 or ‘no qualifications’", '2022', '2016', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        'High Skilled': ["Percentage of the working-age population with qualification at NVQ4+/RQF4+ level", '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        'Active': ['Percentage of the working-age population active in employment', '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        'Inactive due to Illness': ['Percentage of <i>inactive</i> working age population, inactive due to ill health', '2022', '2014', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        'Working Age': ['Percentage of the total population that are of working age (aged 16-64)', '2022', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        '5G connectivity': ['Percentage of outdoor areas with 5G service access from at least one mobile network operator', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
-        'Gigabit connectivity': ['Percentage of premises that have access to a gigabit connection', '2024', '2018', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        'GVA per hour worked': ['Productivity measured as Gross Value Added per hour worked', '2023', '2004', '<a href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/labourproductivity/datasets/subregionalproductivitylabourproductivitygvaperhourworkedandgvaperfilledjobindicesbyuknuts2andnuts3subregions" target="_blank">Source</a>'],
+        'Export Intensity': ['Exports as a percentage of GDP ', '2023', '2016', '<a href="https://www.ons.gov.uk/businessindustryandtrade/internationaltrade/datasets/subnationaltradeingoods" target="_blank">Source</a>'],
+        'New Businesses': ['New firms as a percentage of total active firms', '2023', '2017', '<a href="https://www.ons.gov.uk/businessindustryandtrade/business/activitysizeandlocation/datasets/businessdemographyreferencetable" target="_blank">Source</a>'],
+        'Low Skilled': ["Percentage of the working-age population with NVQ1/RQF1 or ‘no qualifications’", '2023', '2016', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'High Skilled': ["Percentage of the working-age population with qualification at NVQ4+/RQF4+ level", '2023', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Active': ['Percentage of the working-age population active in employment', '2023', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Inactive due to Illness': ['Percentage of <i>inactive</i> working age population, inactive due to ill health', '2023', '2014', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Working Age': ['Percentage of the total population that are of working age (aged 16-64)', '2023', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        '5G connectivity': ['Percentage of outdoor areas with 5G service access from at least one mobile network operator', '2023', '2023', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        'Gigabit connectivity': ['Percentage of premises that have access to a gigabit connection', '2023', '2021', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
     }
     # Filter indicator
     indicators = driver.keys()
@@ -165,8 +165,8 @@ async def main():
     gauge_1 = visualisations.gauge(data, selected_itl3_1, selected_indicator, driver[selected_indicator][1], bounds)
     time_series = visualisations.time_series(all_data, [selected_itl3_1, selected_itl3_2], uk_data)
     gauge_2 = visualisations.gauge(data, selected_itl3_2, selected_indicator, driver[selected_indicator][1], bounds)
-    spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, 2022, '#eb5e5e')
-    spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, 2022, '#9c4f8b')
+    spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, driver['GVA per hour worked'][1], '#eb5e5e')
+    spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, driver['GVA per hour worked'][1], '#9c4f8b')
     
     # Animate charts
     # tasks.append(animate_gauge_async(gauge_1_placeholder, gauge_1, selected_itl3_1, 80, bounds))

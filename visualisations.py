@@ -71,12 +71,12 @@ def time_series(data, regions, uk_data):
     fig.update_layout(
         title={
             'text': '<span style="font-weight:normal;">' + 
-            '<br>'.join(textwrap.wrap(f"Time Series for {regions[0]} against {regions[1]} - <b>GVA per hour (chained 2019)</b>", width=100)) +
+            '<br>'.join(textwrap.wrap(f"Time Series for {regions[0]} against {regions[1]} - <b>GVA per hour (chained 2022)</b>", width=100)) +
             '</span>',
             'font': {'size': 14},
         },
         xaxis_title="Year",
-        yaxis_title=f"GVA per hour (chained 2019) (%)",
+        yaxis_title=f"GVA per hour (chained 2022) (%)",
         width=800,  # Set the desired width
         height=400,  # Set the desired height
         template="plotly_white",  # Use a clean white background
@@ -93,7 +93,7 @@ def time_series(data, regions, uk_data):
 
 def spider(data, indicators, region, selected_year, colour):
     # Filter the data for the selected region and year
-    data = data.loc[data['year'] == selected_year, :]
+    data = data.loc[data['year'] == int(selected_year), :]
     
     # Compute the medians for each column in the indicators
     medians = data.drop(columns='name').median()[indicators]
