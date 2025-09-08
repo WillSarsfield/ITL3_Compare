@@ -4,6 +4,8 @@ import time
 import numpy as np
 import visualisations
 import asyncio
+import os
+import base64
 
 async def animate_gauge_async(chart_placeholder, fig, region, frames, bounds):
     value = fig.data[0].value
@@ -93,7 +95,33 @@ def load_data():
 async def main():
     st.set_page_config(layout="wide", page_title="ITL3 Compare")
 
-    st.logo("static/logo.png", link="https://lab.productivity.ac.uk/", icon_image=None)
+    def img_to_base64(path):
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+
+    logo_base64 = img_to_base64("static/logo.png")
+    figshare_base64 = img_to_base64("static/Figshare_logo.png")
+
+    st.markdown(f"""
+    <div style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 200w;
+        margin: -45px -80px 10px -80px;
+        background-color: #ffffff;
+        padding: 10px 50px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.12);
+        position: relative;
+    ">
+        <a href='https://lab.productivity.ac.uk/' target='_blank'>
+            <img src='data:image/png;base64,{logo_base64}' style='height:30px;'>
+        </a>
+        <a href='https://doi.org/10.48420/30030220' target='_blank'>
+            <img src='data:image/png;base64,{figshare_base64}' style='height:50px;'>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Initialise data
     all_data, uk_data = load_data()
@@ -102,16 +130,34 @@ async def main():
         'GVA per hour worked': ['Productivity measured as Gross Value Added per hour worked', '2023', '2004', '<a href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/labourproductivity/datasets/subregionalproductivitylabourproductivitygvaperhourworkedandgvaperfilledjobindicesbyuknuts2andnuts3subregions" target="_blank">Source</a>'],
         'Export Intensity': ['Exports as a percentage of GDP ', '2023', '2016', '<a href="https://www.ons.gov.uk/businessindustryandtrade/internationaltrade/datasets/subnationaltradeingoods" target="_blank">Source</a>'],
         'New Businesses': ['New firms as a percentage of total active firms', '2023', '2017', '<a href="https://www.ons.gov.uk/businessindustryandtrade/business/activitysizeandlocation/datasets/businessdemographyreferencetable" target="_blank">Source</a>'],
-        'Low Skilled': ["Percentage of the working-age population with NVQ1/RQF1 or ‘no qualifications’", '2023', '2016', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        'High Skilled': ["Percentage of the working-age population with qualification at NVQ4+/RQF4+ level", '2023', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        'Active': ['Percentage of the working-age population active in employment', '2023', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        'Inactive due to Illness': ['Percentage of <i>inactive</i> working age population, inactive due to ill health', '2023', '2014', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Low Skilled': ["Percentage of the working-age population with NVQ1/RQF1 or ‘no qualifications’", '2024', '2016', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'High Skilled': ["Percentage of the working-age population with qualification at NVQ4+/RQF4+ level", '2024', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Active': ['Percentage of the working-age population active in employment', '2024', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
+        'Inactive due to Illness': ['Percentage of <i>inactive</i> working age population, inactive due to ill health', '2024', '2014', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
         'Working Age': ['Percentage of the total population that are of working age (aged 16-64)', '2023', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
-        '5G connectivity': ['Percentage of outdoor areas with 5G service access from at least one mobile network operator', '2023', '2023', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
-        'Gigabit connectivity': ['Percentage of premises that have access to a gigabit connection', '2023', '2021', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        '5G connectivity': ['Percentage of outdoor areas with 5G service access from at least one mobile network operator', '2025', '2023', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        'Gigabit connectivity': ['Percentage of premises that have access to a gigabit connection', '2025', '2021', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
     }
     # Filter indicator
     indicators = driver.keys()
+
+    st.markdown("""
+    <style>
+    /* Target each column container */
+    div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] > div {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 18px;
+        margin: 2px;
+        background-color: #ffffff;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.12);
+    }
+    /* Change main background color */
+    .stApp {
+        background-color: #6b739c;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     cols = st.columns([1,2,1])
 
     selected_indicator = 'GVA per hour worked'
@@ -165,8 +211,8 @@ async def main():
     gauge_1 = visualisations.gauge(data, selected_itl3_1, selected_indicator, driver[selected_indicator][1], bounds)
     time_series = visualisations.time_series(all_data, [selected_itl3_1, selected_itl3_2], uk_data)
     gauge_2 = visualisations.gauge(data, selected_itl3_2, selected_indicator, driver[selected_indicator][1], bounds)
-    spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, driver['GVA per hour worked'][1], '#eb5e5e')
-    spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, driver['GVA per hour worked'][1], '#9c4f8b')
+    spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, driver['GVA per hour worked'][1], '#eb5e5e', driver)
+    spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, driver['GVA per hour worked'][1], '#9c4f8b', driver)
     
     # Animate charts
     # tasks.append(animate_gauge_async(gauge_1_placeholder, gauge_1, selected_itl3_1, 80, bounds))
@@ -175,11 +221,13 @@ async def main():
     # tasks.append(animate_spider_async(spider_1_placeholder, spider_1, selected_itl3_1, 80))
     # tasks.append(animate_spider_async(spider_2_placeholder, spider_2, selected_itl3_2, 80))
     gauge_1_placeholder.plotly_chart(gauge_1, use_container_width=True, key=f'gauge-{selected_itl3_1}-final')
-    gauge_2_placeholder.plotly_chart(gauge_2, use_container_width=True, key=f'gauge-{selected_itl3_2}-final')
-    time_series_placeholder.plotly_chart(time_series, use_container_width=True, key=f'time-series-final')
     spider_1_placeholder.plotly_chart(spider_1, use_container_width=True, key=f'spider-{selected_itl3_1}-final')
+    
+    gauge_2_placeholder.plotly_chart(gauge_2, use_container_width=True, key=f'gauge-{selected_itl3_2}-final')
     spider_2_placeholder.plotly_chart(spider_2, use_container_width=True, key=f'spider-{selected_itl3_2}-final')
 
+    time_series_placeholder.plotly_chart(time_series, use_container_width=True, key=f'time-series-final')
+    
     carousel_items = ""
     # Convert Plotly bar charts to HTML
     for i, indicator in enumerate(list(indicators)[1:]):
@@ -197,7 +245,7 @@ async def main():
     carousel_html = f"""
     <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-inner">
-        {carousel_items}
+        {carousel_items}  <!-- Python variable -->
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -208,8 +256,18 @@ async def main():
         <span class="visually-hidden">Next</span>
     </button>
     </div>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {{
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 120%;
+        padding: 10px;
+    }}
+    </style>
     """
     with cols[1]:
         # Display the carousel in Streamlit
