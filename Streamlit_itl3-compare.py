@@ -137,6 +137,9 @@ async def main():
         'Working Age': ['Percentage of the total population that are of working age (aged 16-64)', '2023', '2012', '<a href="https://www.nomisweb.co.uk/datasets/apsnew" target="_blank">Source</a>'],
         '5G connectivity': ['Percentage of outdoor areas with 5G service access from at least one mobile network operator', '2025', '2023', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
         'Gigabit connectivity': ['Percentage of premises that have access to a gigabit connection', '2025', '2021', '<a href="https://www.ofcom.org.uk/research-and-data/multi-sector-research/infrastructure-research" target="_blank">Source</a>'],
+        'GFCF per job': ['Gross fixed capital formation per job, total amount of investment in tangible and intangible assets', '2020', '2008', '<a href="https://www.ons.gov.uk/economy/regionalaccounts/grossdisposablehouseholdincome/datasets/experimentalregionalgrossfixedcapitalformationgfcfestimatesbyassettype" target="_blank">Source</a>'],
+        'ICT per job': ['Total amount of investment in ICT equipment per job', '2020', '2008', '<a href="https://www.ons.gov.uk/economy/regionalaccounts/grossdisposablehouseholdincome/datasets/experimentalregionalgrossfixedcapitalformationgfcfestimatesbyassettype" target="_blank">Source</a>'],
+        'Intangibles per job': ['Total amount of investment in intangible capital per job', '2020', '2008', '<a href="https://www.ons.gov.uk/economy/regionalaccounts/grossdisposablehouseholdincome/datasets/experimentalregionalgrossfixedcapitalformationgfcfestimatesbyassettype" target="_blank">Source</a>']
     }
     # Filter indicator
     indicators = driver.keys()
@@ -155,6 +158,7 @@ async def main():
     /* Change main background color */
     .stApp {
         background-color: #6b739c;
+        min-width: 1500px; /* app won't shrink smaller than this */
     }
     </style>
     """, unsafe_allow_html=True)
@@ -162,13 +166,6 @@ async def main():
 
     selected_indicator = 'GVA per hour worked'
     data = all_data[['name', 'year', selected_indicator]]
-    # if years.max() - years.min() != 0:
-    #     selected_years = st.sidebar.slider("Select Year:", years.min(),  years.max(), 
-    #                                     value=years.max())
-    # else:
-    #     selected_years = years.max()
-    #selected_years = list(range(selected_years[0], selected_years[1] + 1))
-    # data = data.loc[data['year'] == selected_years]
     
     # Filter region
     all_data = all_data.sort_values(by=['name', 'year'])
@@ -176,14 +173,14 @@ async def main():
     itl3 = list(all_data['name'].unique())
     query_params = {k.lower(): v.upper() for k, v in st.query_params.items()}
     index_1 = 0
+    
     if 'region_1' in query_params:
         if query_params['region_1'] in code:
             index_1 = code.index(query_params['region_1'])
     with cols[0]:
         selected_itl3_1 = st.selectbox("Select First ITL3 Region:", itl3, index=index_1)
-    code.remove(code[itl3.index(selected_itl3_1)])
-    itl3.remove(selected_itl3_1)
-    index_2 = 0
+
+    index_2 = 1
     if 'region_2' in query_params:
             if query_params['region_2'] in code:
                 index_2 = code.index(query_params['region_2'])
@@ -211,8 +208,8 @@ async def main():
     gauge_1 = visualisations.gauge(data, selected_itl3_1, selected_indicator, driver[selected_indicator][1], bounds)
     time_series = visualisations.time_series(all_data, [selected_itl3_1, selected_itl3_2], uk_data)
     gauge_2 = visualisations.gauge(data, selected_itl3_2, selected_indicator, driver[selected_indicator][1], bounds)
-    spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, driver['GVA per hour worked'][1], '#eb5e5e', driver)
-    spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, driver['GVA per hour worked'][1], '#9c4f8b', driver)
+    spider_1 = visualisations.spider(all_data, indicators, selected_itl3_1, '#eb5e5e', driver)
+    spider_2 = visualisations.spider(all_data, indicators, selected_itl3_2, '#9c4f8b', driver)
     
     # Animate charts
     # tasks.append(animate_gauge_async(gauge_1_placeholder, gauge_1, selected_itl3_1, 80, bounds))
@@ -220,11 +217,11 @@ async def main():
     # tasks.append(animate_gauge_async(gauge_2_placeholder, gauge_2, selected_itl3_2, 80, bounds))
     # tasks.append(animate_spider_async(spider_1_placeholder, spider_1, selected_itl3_1, 80))
     # tasks.append(animate_spider_async(spider_2_placeholder, spider_2, selected_itl3_2, 80))
-    gauge_1_placeholder.plotly_chart(gauge_1, use_container_width=True, key=f'gauge-{selected_itl3_1}-final')
-    spider_1_placeholder.plotly_chart(spider_1, use_container_width=True, key=f'spider-{selected_itl3_1}-final')
+    gauge_1_placeholder.plotly_chart(gauge_1, use_container_width=True, key=f'gauge-{selected_itl3_1}-1-final')
+    spider_1_placeholder.plotly_chart(spider_1, use_container_width=True, key=f'spider-{selected_itl3_1}-1-final')
     
-    gauge_2_placeholder.plotly_chart(gauge_2, use_container_width=True, key=f'gauge-{selected_itl3_2}-final')
-    spider_2_placeholder.plotly_chart(spider_2, use_container_width=True, key=f'spider-{selected_itl3_2}-final')
+    gauge_2_placeholder.plotly_chart(gauge_2, use_container_width=True, key=f'gauge-{selected_itl3_2}-2-final')
+    spider_2_placeholder.plotly_chart(spider_2, use_container_width=True, key=f'spider-{selected_itl3_2}-2-final')
 
     time_series_placeholder.plotly_chart(time_series, use_container_width=True, key=f'time-series-final')
     
@@ -261,11 +258,22 @@ async def main():
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <style>
+    /* Shrink the actual buttons */
+    .carousel-control-prev,
+    .carousel-control-next {{
+        width: 50px;   /* reduce clickable width */
+        height: 50px;  /* reduce clickable height */
+        top: 50%;      /* center vertically */
+        transform: translateY(-50%);
+        background-color: rgba(0,0,0,0.5); /* optional */
+        border-radius: 20%; /* makes it a circle */
+    }}
+
+    /* Style the arrow icons inside */
     .carousel-control-prev-icon,
     .carousel-control-next-icon {{
-        background-color: rgba(0,0,0,0.5);
-        border-radius: 120%;
-        padding: 10px;
+        width: 20px;
+        height: 20px;
     }}
     </style>
     """

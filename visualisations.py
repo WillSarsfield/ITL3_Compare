@@ -97,9 +97,7 @@ def time_series(data, regions, uk_data):
     
     return fig
 
-def spider(data, indicators, region, selected_year, colour, driver):
-    # Filter the data for the selected region and year
-    # data = data.loc[data['year'] == int(selected_year), :]
+def spider(data, indicators, region, colour, driver):
     # Build the output DataFrame
     row = pd.DataFrame({'name': data['name'].unique()})
     for indicator, years in driver.items():
@@ -113,9 +111,13 @@ def spider(data, indicators, region, selected_year, colour, driver):
     # Compute the medians for each column in the indicators
     medians = row.drop(columns='name').median()[indicators]
     
-    # Get the relative values for each indicator
-    temp = row.loc[row['name'] == region, indicators]
-    temp = (temp / medians) * 100
+    temp = row.loc[row['name'] == region, indicators].copy()
+    opposite_indicators = ['Low Skilled', 'Inactive due to Illness']
+    for ind in indicators:
+        if ind in opposite_indicators:
+            temp[ind] = (medians[ind] / temp[ind]) * 100
+        else:
+            temp[ind] = (temp[ind] / medians[ind]) * 100
 
     # Handle missing data by filtering out NaN values
     temp = temp.dropna(axis=1)  # Drop columns with NaN values
@@ -125,7 +127,7 @@ def spider(data, indicators, region, selected_year, colour, driver):
     r_values = temp.values.flatten().tolist()
     r_values.append(r_values[0])  # Append the first value to close the loop
 
-    theta_values = ['<br>'.join(textwrap.wrap(ind, width=10)) for ind in valid_indicators]
+    theta_values = ['<br>'.join(textwrap.wrap(ind, width=11)) for ind in valid_indicators]
     theta_values.append(theta_values[0])  # Close the loop
 
     # Create a time series plot
@@ -135,7 +137,7 @@ def spider(data, indicators, region, selected_year, colour, driver):
         r=r_values,  # Values for the radar plot
         theta=theta_values,  # Categories (indicators)
         fill='toself',  # Fill the area under the curve
-        name=f"{region} ({selected_year})",
+        name=region,
         line=dict(color=colour, width=2),  # Customize line color and width
         hoverinfo="text",  # Enable custom hover text
         hovertemplate="<b>Indicator:</b> %{theta}<br><b>Relative to UK Median:</b> %{r:.2f}%<extra></extra>"  # Custom hover text
@@ -174,13 +176,14 @@ def spider(data, indicators, region, selected_year, colour, driver):
         autosize=True,
         template="plotly_white",  # Use a clean white background
         showlegend=False,
+        margin=dict(l=10, r=10, t=66, b=80)
     )
     
     return fig
 
 def bar(data, indicator, regions, driver):
     temp = data.loc[(data['name'] == regions[0]), ['year', indicator]].dropna()
-    if indicator != 'GVA per hour worked':
+    if indicator not in ['GVA per hour worked', 'GFCF per job', 'ICT per job', 'Intangibles per job']:
         temp[indicator] = temp[indicator] * 100  # Multiply indicator values by 100
         unit = '%'
     else:
@@ -194,7 +197,7 @@ def bar(data, indicator, regions, driver):
         marker=dict(color="#eb5e5e")  # Customize bar color
     ))
     temp = data.loc[(data['name'] == regions[1]), ['year', indicator]].dropna()
-    if indicator != 'GVA per hour worked':
+    if indicator not in ['GVA per hour worked', 'GFCF per job', 'ICT per job', 'Intangibles per job']:
         temp[indicator] = temp[indicator] * 100  # Multiply indicator values by 100
     fig.add_trace(go.Bar(
         x=temp['year'],  # X-axis: Year
@@ -214,7 +217,8 @@ def bar(data, indicator, regions, driver):
         autosize=True,
         template="plotly_white",  # Use a clean white background
         showlegend=False,
-        height=450
+        height=450,
+        margin=dict(l=100, r=40, t=100, b=100)
     )
     
     return fig
