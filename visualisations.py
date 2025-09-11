@@ -73,7 +73,7 @@ def time_series(data, regions, uk_data):
     fig.update_layout(
         title={
             'text': '<span style="font-weight:normal;">' + 
-            '<br>'.join(textwrap.wrap(f"Time Series for {regions[0]} against {regions[1]} - <b>GVA per hour (chained 2022)</b>", width=100)) +
+            '<br>'.join(textwrap.wrap(f"Time Series of {regions[0]} against {regions[1]} - <b>GVA per hour (chained 2022)</b>", width=100)) +
             '</span>',
             'font': {'size': 14},
             'x': 0.05,  # move slightly to the right (0=left, 1=right)
@@ -127,7 +127,7 @@ def spider(data, indicators, region, colour, driver):
     r_values = temp.values.flatten().tolist()
     r_values.append(r_values[0])  # Append the first value to close the loop
 
-    theta_values = ['<br>'.join(textwrap.wrap(ind, width=11)) for ind in valid_indicators]
+    theta_values = ['<br>'.join(textwrap.wrap(ind, width=10)) for ind in valid_indicators]
     theta_values.append(theta_values[0])  # Close the loop
 
     # Create a time series plot
@@ -160,16 +160,15 @@ def spider(data, indicators, region, colour, driver):
                 visible=True,
                 range=[20, 200],  # Adjust the range as needed
                 showticklabels=False,  # Remove radial axis ticks
-                tickfont=dict(size=8)
             ),
             angularaxis=dict(
-                tickfont=dict(size=12),
+                tickfont=dict(size=10),
             ),
             domain=dict(x=[0.2, 0.8]),  # shrink spider within figure
         ),
         title={
             'text': '<span style="font-weight:normal;">' + 
-            '<br>'.join(textwrap.wrap(f"Spider Plot of <b>Productivity Indicators</b> {region} - <i>latest available data",width=60)) +
+            '<br>'.join(textwrap.wrap(f"Spider Plot of <b>Productivity Indicators</b> {region} - <i>latest available data",width=55)) +
             '</span>',
             'font': {'size': 14},
         },

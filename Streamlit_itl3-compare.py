@@ -101,6 +101,7 @@ async def main():
 
     logo_base64 = img_to_base64("static/logo.png")
     figshare_base64 = img_to_base64("static/Figshare_logo.png")
+    cc_base64 = img_to_base64("static/cc.xlarge.png")
 
     st.markdown(f"""
     <div style="
@@ -280,6 +281,25 @@ async def main():
     with cols[1]:
         # Display the carousel in Streamlit
         st.components.v1.html(carousel_html, height=500)
+    
+    st.markdown(
+    f"""
+    <style>
+    .bottom-right-image {{
+        position: fixed;
+        bottom: 10px;   /* distance from bottom */
+        right: 10px;    /* distance from right */
+        z-index: 1000;  /* keep it on top of other elements */
+    }}
+    </style>
+    <div class="bottom-right-image">
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">
+            <img src='data:image/png;base64,{cc_base64}' style='height:30px;'>
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
     
     # await asyncio.gather(*tasks)
