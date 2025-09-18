@@ -127,6 +127,13 @@ async def main():
     # Initialise data
     all_data, uk_data = load_data()
 
+    all_data['GVA/H volume'] = all_data.groupby("code")["GVA/H volume"].transform(
+        lambda x: (x / x.loc[all_data.loc[x.index, "year"] == 2008].values[0]) * 100
+    )
+    uk_data['GVA/H volume'] = uk_data.groupby("code")["GVA/H volume"].transform(
+        lambda x: (x / x.loc[uk_data.loc[x.index, "year"] == 2008].values[0]) * 100
+    )
+
     driver = {
         'GVA per hour worked': ['Productivity measured as Gross Value Added per hour worked', '2023', '2004', '<a href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/labourproductivity/datasets/subregionalproductivitylabourproductivitygvaperhourworkedandgvaperfilledjobindicesbyuknuts2andnuts3subregions" target="_blank">Source</a>'],
         'Export Intensity': ['Exports as a percentage of GDP ', '2023', '2016', '<a href="https://www.ons.gov.uk/businessindustryandtrade/internationaltrade/datasets/subnationaltradeingoods" target="_blank">Source</a>'],

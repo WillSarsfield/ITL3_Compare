@@ -73,7 +73,7 @@ def time_series(data, regions, uk_data):
     fig.update_layout(
         title={
             'text': '<span style="font-weight:normal;">' + 
-            '<br>'.join(textwrap.wrap(f"Time Series of {regions[0]} against {regions[1]} - <b>GVA per hour (chained 2022)</b>", width=100)) +
+            '<br>'.join(textwrap.wrap(f"Time Series of {regions[0]} against {regions[1]} - <b>GVA per hour (chained 2008)</b>", width=100)) +
             '</span>',
             'font': {'size': 14},
             'x': 0.05,  # move slightly to the right (0=left, 1=right)
@@ -82,7 +82,7 @@ def time_series(data, regions, uk_data):
             'yanchor': 'top',    # align title relative to y
         },
         xaxis_title="Year",
-        yaxis_title=f"GVA per hour (chained 2022) (%)",
+        yaxis_title=f"GVA per hour (chained 2008) (%)",
         autosize=True,
         template="plotly_white",  # Use a clean white background
         legend=dict(
@@ -108,42 +108,79 @@ def spider(data, indicators, region, colour, driver):
         # Merge so values align by code
         row = row.merge(sub, on='name', how='left')
     
-    # Compute the medians for each column in the indicators
-    medians = row.drop(columns='name').median()[indicators]
-    
-    temp = row.loc[row['name'] == region, indicators].copy()
-    opposite_indicators = ['Low Skilled', 'Inactive due to Illness']
-    for ind in indicators:
-        if ind in opposite_indicators:
-            temp[ind] = (medians[ind] / temp[ind]) * 100
-        else:
-            temp[ind] = (temp[ind] / medians[ind]) * 100
+    # Compute percentile ranks for each indicator
+    percentile_ranks = pd.DataFrame({'name': data['name'].unique()})
 
+    for ind in indicators:
+        # For each indicator, get the series
+        series = row[ind]
+
+        # Compute percentile rank of each value
+        ranks = series.rank(pct=True) * 100  # gives 0–100
+        percentile_ranks[ind] = ranks
+
+    # Subset to your region of interest
+    temp = percentile_ranks.loc[percentile_ranks['name'] == region, indicators].copy()
+
+    # Handle "opposite indicators" (lower values = better)
+    opposite_indicators = ['Low Skilled', 'Inactive due to Illness']
+    for ind in opposite_indicators:
+        if ind in temp.columns:
+            temp[ind] = 100 - temp[ind]  # invert percentile so "lower = better"
     # Handle missing data by filtering out NaN values
     temp = temp.dropna(axis=1)  # Drop columns with NaN values
-    valid_indicators = temp.columns.tolist()  # Get the corresponding valid indicators
+    # Compute real values for the region
+    real_values = row.loc[row['name'] == region, indicators].copy()
 
-    # Close the loop by appending the first value to the end
-    r_values = temp.values.flatten().tolist()
-    r_values.append(r_values[0])  # Append the first value to close the loop
+    # Compute medians for each indicator 
+    medians = row[indicators].median()
+
+    # Handle missing values consistently
+    valid_indicators = [ind for ind in indicators if ind in temp.columns]
+
+    # Close the loop
+    r_values = temp[valid_indicators].values.flatten().tolist()
+    r_values.append(r_values[0])
 
     theta_values = ['<br>'.join(textwrap.wrap(ind, width=10)) for ind in valid_indicators]
-    theta_values.append(theta_values[0])  # Close the loop
+    theta_values.append(theta_values[0])
 
-    # Create a time series plot
+    # Build custom hover text
+    hover_texts = []
+    for ind in valid_indicators:
+        raw_val = real_values[ind].values[0]
+        median_val = medians[ind]
+        percentile_val = temp[ind].values[0]
+        if ind in ['GVA per hour worked', 'GFCF per job', 'ICT per job', 'Intangibles per job']:
+            hover_texts.append(
+                f"<b>Indicator:</b> {ind}<br>"
+                f"<b>Value:</b> £{raw_val:,.2f}<br>"
+                f"<b>UK Median:</b> £{median_val:,.2f}<br>"
+                f"<b>Percentile:</b> {percentile_val:.2f}%"
+            )
+        else:
+            hover_texts.append(
+                f"<b>Indicator:</b> {ind}<br>"
+                f"<b>Value:</b> {raw_val:,.2%}<br>"
+                f"<b>UK Median:</b> {median_val:,.2%}<br>"
+                f"<b>Percentile:</b> {percentile_val:.2f}%"
+            )
+    # Close the loop
+    hover_texts.append(hover_texts[0])
+
+    # Create the figure
     fig = go.Figure()
-    # Add the trace for the selected region
     fig.add_trace(go.Scatterpolar(
-        r=r_values,  # Values for the radar plot
-        theta=theta_values,  # Categories (indicators)
-        fill='toself',  # Fill the area under the curve
+        r=r_values,
+        theta=theta_values,
+        text=hover_texts,         # supply custom hover text
+        hoverinfo="text",         # only show text
+        fill='toself',
         name=region,
-        line=dict(color=colour, width=2),  # Customize line color and width
-        hoverinfo="text",  # Enable custom hover text
-        hovertemplate="<b>Indicator:</b> %{theta}<br><b>Relative to UK Median:</b> %{r:.2f}%<extra></extra>"  # Custom hover text
+        line=dict(color=colour, width=2),
     ))
     fig.add_trace(go.Scatterpolar(
-        r=[100]*len(r_values),  # Values for the radar plot
+        r=[50]*len(r_values),  # Values for the radar plot
         theta=theta_values,  # Categories (indicators)
         fill='toself',  # Fill the area under the curve
         name=f"UK median",
@@ -158,7 +195,7 @@ def spider(data, indicators, region, colour, driver):
         polar=dict(
             radialaxis=dict(
                 visible=True,
-                range=[20, 200],  # Adjust the range as needed
+                range=[0, 100],  # Adjust the range as needed
                 showticklabels=False,  # Remove radial axis ticks
             ),
             angularaxis=dict(
